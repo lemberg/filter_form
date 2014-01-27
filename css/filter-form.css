@@ -1,0 +1,35 @@
+.filter-form {
+  padding-bottom: 20px;
+}
+.filter-form .filter-form-body .form-item{
+  float: left;
+  margin: 0;
+  padding-right: 9px;
+}
+.filter-form .filter-form-body .container-inline-date{
+  float: left;
+  clear: none;
+}
+.filter-form .filter-form-body .container-inline-date .date-padding{
+  padding: 0;
+}
+.filter-form .filter-form-body{
+  background: #e1e2dc;
+  border-radius: 8px;
+  padding: 8px 1px 8px 10px;
+}
+.filter-form .form-type-textfield input{
+  width: 200px;
+}
+.filter-form .form-type-select .newListSelected {
+  width: 220px;
+}
+
+.filter-form .form-actions{
+  overflow: hidden;
+  line-height: 27px;
+}
+.filter-form .form-actions input{
+  float: right;
+  margin: 0 0 0 9px;
+}

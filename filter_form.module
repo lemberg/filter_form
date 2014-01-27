@@ -1,0 +1,171 @@
+<?php
+
+/**
+ * Filter form builder callback.
+ */
+function filter_form_build($type) {
+  $args = func_get_args();
+  array_shift($args);
+  $form_state = array(
+    'wrapper_callback' => 'filter_form_wrapper',
+    'type' => $type,
+    'args' => $args,
+  );
+
+  return drupal_build_form($type . '_filter_form', $form_state);
+}
+
+/**
+ * Filter form wrapper callback.
+ */
+function filter_form_wrapper($form, &$form_state) {
+  $type = $form_state['type'];
+  $form_state['options'] = filter_form_get_values($type);
+
+
+  $form['#attributes']['class'] = array('filter-form');
+  $form['actions'] = array(
+    '#type' => 'actions',
+  );
+  $form['actions']['apply'] = array(
+    '#type' => 'submit',
+    '#value' => t('Apply'),
+    '#submit' => array('filter_form_apply'),
+  );
+  $form['actions']['reset'] = array(
+    '#type' => 'submit',
+    '#value' => t('Reset'),
+    '#attributes' => array(
+      'class' => array('form-cancel'),
+    ),
+    '#submit' => array('filter_form_reset'),
+  );
+
+  $form['#theme'] = 'filter_form';
+  $form['#attached'] = array(
+    'css' => array(
+      drupal_get_path('module', 'filter_form') . '/css/filter-form.css',
+    ),
+  );
+
+  // @todo: Add CSS.
+
+  return $form;
+}
+
+/**
+ * Apply button submit callback. Stores not empty filter values.
+ */
+function filter_form_apply($form, &$form_state) {
+  form_state_values_clean($form_state);
+
+  $values = $form_state['values'];
+
+  filter_form_set_values($form_state['type'], array_filter_recursive($values, '_filter_form_values'));
+
+  $form_state['redirect'] = filter_form_redirect();
+}
+
+/**
+ * Reset button submit callback. Resets filter values to default ones.
+ */
+function filter_form_reset($form, &$form_state) {
+  filter_form_set_values($form_state['type']);
+
+  $form_state['redirect'] = filter_form_redirect();
+}
+
+/**
+ * Returns redirect path for a filter form.
+ *
+ * Function preserves current path and all query parameters, except 'page'.
+ *
+ * @return array
+ *  Redirect path for filter form.
+ */
+function filter_form_redirect() {
+  return array(
+    current_path(),
+    array(
+      'query' => drupal_get_query_parameters(NULL, array('q', 'page')),
+    ),
+  );
+}
+
+/**
+ * Filter values getter.
+ */
+function filter_form_get_values($type) {
+  if (empty($_SESSION[$type])) {
+    filter_form_set_values($type);
+  }
+
+  return $_SESSION[$type];
+}
+
+/**
+ * Filter values setter.
+ */
+function filter_form_set_values($type, $options = NULL) {
+  $_SESSION[$type] = isset($options) ? $options : filter_form_default_values($type);
+}
+
+/**
+ * Returns default values for a particular filter form.
+ */
+function filter_form_default_values($type) {
+  $return = module_invoke($type, 'filter_form_default_values');
+
+  return !empty($return) ? $return : array();
+}
+
+/**
+ * Filters out empty array elements.
+ */
+function _filter_form_values($element) {
+  return $element !== '' && !is_null($element);
+}
+
+/**
+ * Implements hook_theme();
+ */
+function filter_form_theme() {
+  $path = drupal_get_path('module', 'filter_form') . '/templates';
+
+  return array(
+    'filter_form' => array(
+      'render element' => 'form',
+      'template' => 'filter-form',
+      'path' => $path,
+    ),
+  );
+}
+
+/**
+ * Implements hook_preprocess();
+ */
+function template_preprocess_filter_form(&$variables) {
+  $form = $variables['form'];
+
+  $variables['actions'] = drupal_render($form['actions']);
+
+  $variables['body'] = '';
+  foreach (element_children($form) as $key) {
+    $variables['body'] .= drupal_render($form[$key]);
+  }
+}
+
+/**
+ * Recursively filters out given array.
+ *
+ * @see array_filter;
+ */
+function array_filter_recursive($input, $callback = null) {
+  foreach ($input as &$value) {
+    if (is_array($value)) {
+      $value = array_filter_recursive($value, $callback);
+    }
+  }
+
+  return array_filter($input, $callback);
+}
